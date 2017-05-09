@@ -8,6 +8,12 @@ import pandas as pd
 #import ut_grapher as utg
 import ut_basic as utb
 
+# This file is intended to deal with distribution processing. But it is kinda 
+# messy right now... Lots of half baked code because of project deadlines.  
+# Could use an overhaul. Perhaps a Distribution class and a Math class that 
+# operates on the distributions? That is kinda how the code is turning out as 
+# is.
+
 class DistributionMather:
 
     gravity = 9.81 # m/s^2
