@@ -14,13 +14,15 @@ import ut_basic as utb
 # operates on the distributions? That is kinda how the code is turning out as 
 # is.
 
-class DistributionMather:
+class PDDistributions:
 
     gravity = 9.81 # m/s^2
     density_water = 1000 # kg/m^3
     density_sediment = 2650 # kg/m^3
     slope = 0.02
 
+    # Methods
+    # Perform calculations on internal distribution dataframe
     def __init__(self, pd_data, max_size, auto=True):
         # Assumes pd_data is formatted with grain size classes for rows and 
         # different distributions for columns. Smallest grain size class first
@@ -71,7 +73,6 @@ class DistributionMather:
         Di = (Db * Db1)**(1/2) # geometric mean
 
         self.class_geometric_means =  pd.Series(Di, index=classes)
-
 
     def calc_distribution_geometric_means(self):
         # Calculate the geometric mean of each size class assuming the grain 
@@ -168,6 +169,9 @@ class DistributionMather:
         self.time_cumsums = self.calc_normalized_cumsum(data=self.time_sums)
 
 
+    # Class methods
+    # Perform calculations (usually binary operations) on external distribution 
+    # dataframes.
     def compare_distributions(pd_distributions_A, pd_distributions_B, min_size=None, max_size=None):
         # Compare the distributions in A to Distributions in B. If 
         # distributions do not have matching grain sizes classes, they will be 
