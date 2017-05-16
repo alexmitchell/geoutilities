@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from ut_basic import printer
+from .ut_basic import printer
 
 import pandas as pd
 import os

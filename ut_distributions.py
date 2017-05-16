@@ -4,9 +4,9 @@ import numpy as np
 #import matplotlib.pyplot as plt
 import pandas as pd
 
-#import ut_fitter as utf
-#import ut_grapher as utg
-import ut_basic as utb
+#import .ut_fitter as utf
+#import .ut_grapher as utg
+import .ut_basic as utb
 
 # This file is intended to deal with distribution processing. But it is kinda 
 # messy right now... Lots of half baked code because of project deadlines.  
