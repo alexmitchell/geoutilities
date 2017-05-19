@@ -4,7 +4,7 @@ import sys
 
 class TaskManager:
 
-    # A minimal taskmaster that handles command line arguments and 
+    # A minimal task manager that handles command line arguments and 
     # automatically calls provided function callbacks. This class should be 
     # inherited and then expanded for the specific project by including 
     # additional options (see __init__ for more info) and defining callback 
