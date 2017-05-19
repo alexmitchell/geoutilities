@@ -6,7 +6,7 @@ import pandas as pd
 
 #import .ut_fitter as utf
 #import .ut_grapher as utg
-import .ut_basic as utb
+import geoutilities.ut_basic as utb
 
 # This file is intended to deal with distribution processing. But it is kinda 
 # messy right now... Lots of half baked code because of project deadlines.  
@@ -23,9 +23,12 @@ class PDDistributions:
 
     # Methods
     # Perform calculations on internal distribution dataframe
-    def __init__(self, pd_data, max_size, auto=True):
+    def __init__(self, pd_data, max_size, auto=True, cumsummed=False):
         # Assumes pd_data is formatted with grain size classes for rows and 
         # different distributions for columns. Smallest grain size class first
+        #
+        # Cumsummed indicates whether the provided data is a cumsum 
+        # distribution or a regular distribution.
         #
         # Will ignore non-numeric indices
         # 
@@ -50,10 +53,24 @@ class PDDistributions:
         self.data = pd_data.loc[pd.Index(numeric)]
         self.max_size = max_size
 
+        # Set the maximum value by hand
+        if cumsummed:
+            # Don't know if the cumsum is normalized or not
+            previous = self.data.iloc[-1].max()
+            self.data.loc[max_size] =  previous if previous > 1 else 1
+        else:
+            # Not a cumsum distribution
+            self.data.loc[max_size] =  0
+
         if auto:
-            self.calc_normalized_cumsum()
+            if cumsummed:
+                self.cumsum = self.data
+            else:
+                self.calc_normalized_cumsum()
             self.calc_class_geometric_means()
         
+
+
     def calc_normalized_cumsum(self, data=None):
         if data is None:
             self.data_cumsum =  self.data.cumsum() / self.data.sum()
@@ -62,17 +79,19 @@ class PDDistributions:
 
     def calc_class_geometric_means(self):
 
-        classes = self.data.index
-        n_classes = classes.size
-        offset = (np.arange(n_classes)+1)%n_classes
+        classes = self.data.index.get_values()
+        #n_classes = classes.size
+        #offset = (np.arange(n_classes)+1)%n_classes
 
-        Db = classes.get_values() # class min size
-        Db1 = Db[offset].copy() #D_b,i+1; class max size
-        Db1[-1] = self.max_size # must manually set largest value
+        Db = classes[:-1] # class min size
+        Db1 = classes[1:] # class max size
+        #Db = classes.get_values() # class min size
+        #Db1 = Db[offset].copy() #D_b,i+1; class max size
+        #Db1[-1] = self.max_size # must manually set largest value
 
         Di = (Db * Db1)**(1/2) # geometric mean
 
-        self.class_geometric_means =  pd.Series(Di, index=classes)
+        self.class_geometric_means =  pd.Series(Di, index=classes[:-1])
 
     def calc_distribution_geometric_means(self):
         # Calculate the geometric mean of each size class assuming the grain 

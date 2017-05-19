@@ -30,12 +30,26 @@ class DataLoader:
         data = pd.read_excel(filepath, **pd_kwargs)
         return data
 
-    def load_csv(self, filename, skiprows, skipfooter, flip=False):
+    def load_csv(self, filename, flip=False, **kwargs):
+        kwargs['delimiter'] = ','
+        return self.load_txt(filename, flip=flip, **kwargs)
+
+    def load_txt(self, filename, flip=False, **kwargs):
+    #def load_txt(self, filename, skiprows, skipfooter, flip=False, delimiter='\s*'):
         filepath = self.data_path + filename
 
-        data = pd.read_csv(filepath, engine='python', dtype=None,
-                delimiter=',', index_col=0,
-                skiprows=skiprows, skipfooter=skipfooter)
+        # Some default parameters
+        keys = kwargs.keys()
+        if 'engine' not in keys:
+            kwargs['engine'] = 'python'
+        if 'dtype' not in keys:
+            kwargs['dtype'] = None
+        if 'index_col' not in keys:
+            kwargs['index_col'] = 0
+        if 'delimiter' not in keys:
+            kwargs['delimiter'] = '\s*'
+
+        data = pd.read_csv(filepath, **kwargs)
 
         if flip:
             return data.iloc[::-1]
