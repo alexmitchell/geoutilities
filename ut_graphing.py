@@ -4,8 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 #import pandas as pd
 
-import .ut_fitting as utf
-from .ut_basic import printer
+import geoutilities.ut_fitting as utf
+from geoutilities.ut_basic import printer
 
 class Grapher:
     # Provide functions for conveniently graphing data
@@ -92,6 +92,9 @@ class Grapher:
     # Future: Make generic plotting function which takes a specific plotting 
     # function as an argument? Generic does the plotting and specific does all 
     # the formatting. Basically one specific function for each problem?
+    def show_plots(self):
+        plt.show()
+
     def plot_fit(self, x_series, y_series, axis=None, log=False, lineformat=None, markerformat=None):
         fit_fu = utf.Fitter.get_power_fit_series if log else utf.Fitter.get_linear_fit_series
         fit_series = fit_fu(axis, x_series, y_series)

@@ -64,12 +64,16 @@ class PDDistributions:
 
         if auto:
             if cumsummed:
-                self.cumsum = self.data
+                self.cumsum = self.data / self.data.max()
             else:
                 self.calc_normalized_cumsum()
             self.calc_class_geometric_means()
-        
 
+            self.calc_line_functions()
+
+
+    def get_size_classes(self):
+        return self.data.index.values
 
     def calc_normalized_cumsum(self, data=None):
         if data is None:
@@ -186,6 +190,79 @@ class PDDistributions:
 
         # calculate the new normalized cumsum
         self.time_cumsums = self.calc_normalized_cumsum(data=self.time_sums)
+
+    def calc_line_functions(self):
+        # Generate a dataframe of line functions by linear interpolating 
+        # between cumsum rows. df[row,col] is the line from df[row,col] to 
+        # df[row+1,col]
+        #
+        # f_i(x) = m_i * x + y_i - m_i * x_i
+        #
+        # Recommended to change df such that anything outside of the defined 
+        # distribution is a flat line. (add padding lines before/after df)
+        
+        df = self.cumsum
+        length = df.index.size
+        index = df.index.values.reshape(length,1)
+        columns = df.columns
+        n = index.size
+
+        y = df.values # Get the numpy array out of df
+        y0 = y[:n-1,:]
+        y1 = y[1:, :]
+
+        x0 = index[:n-1]
+        x1 = index[1:]
+
+        m = (y1-y0) / (x1 - x0)
+        b = y0 - m * x0
+        
+        #print(m, b)
+
+        self.line_matrix = pd.Panel([m,b], items=['m','b'],
+                major_axis=index[:-1,:].ravel(), minor_axis=columns.ravel())
+        #self.line_matrix = np.array([m,b])
+        #self.line_slope = pd.DataFrame(m, index=index[:-1,:].ravel(), columns=columns.ravel())
+        #self.line_intercept = pd.DataFrame(b, index=index[:-1,:].ravel(), columns=columns.ravel())
+        
+    def calc_percentile_size(self, percent):
+        # Calculate the Di grain size where i is the percent less than, such as 
+        # D50 or D84
+        
+        print("Calculating D{}...".format(percent))
+        fraction = percent / 100
+
+        cumsum = self.cumsum
+        np_cumsum = cumsum.values
+        lines = self.line_matrix
+        #line_slope = self.line_slope
+        #line_intercept = self.line_intercept
+
+        smaller = np_cumsum <= fraction
+        larger = np_cumsum > fraction
+        #print(cumsum)
+        #print(smaller)
+        #print(larger)
+
+        sizes, runs = np.where(np.logical_and(smaller[:-1,:], larger[1:,:]))
+
+        #print(line_slope)
+        #print(line_intercept)
+        #print(sizes, runs)
+        #print(lines)
+        #print()
+        #m = lines['m']
+        #print(m)
+        #coefficients = np.extract(indices, lines)
+        coefficients = lines.values[:,sizes,runs]
+        #print(coefficients)
+
+        m = coefficients[0,:]
+        b = coefficients[1,:]
+        values = (fraction - b) / m
+
+        return values
+        #print(cumsum.index.values[indices[0]])
 
 
     # Class methods

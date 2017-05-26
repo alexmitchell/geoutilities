@@ -44,10 +44,10 @@ class TaskManager:
         for name, callback, info in options:
             self.option_dict[name] = callback
             self.option_order.append(name)
-            self.messages.append(name, info)
+            self.messages.append([name, info])
 
         # Get command line arguments and parse/execute them
-        args = sys.argv
+        args = sys.argv[1:] # first arg is file name; ignore it
         self.handle_args(args)
 
     def load_data(self):
@@ -58,15 +58,28 @@ class TaskManager:
         
         if self.help in args:
             dict[self.help]()
-        elif self.all in args or not args[1:]:
-            self.do_all()
+        elif self.all in args or not args:
+            dict[self.all]()
         else:
+            # Call list is only used so that invalid options are printed first.
+            call_list = []
             for option in self.option_order:
-                dict[option]() if option in args
+                if option in args:
+                    args.remove(option)
+                    call_list.append(dict[option])
 
-    def print_help(self, messages=[]):
+            for option in args:
+                print('{} is not an option'.format(option))
+            if args: dict[self.help]()
+
+            for callback in call_list:
+                callback()
+
+    def print_help(self):
+        print()
+        print('Available options are:')
         for option, info in self.messages:
-            print(self.help_format.format(option, info))
+            print(self.help_format.format(option=option, info=info))
 
     def do_all(self):
         print('Executing all tasks...')
@@ -75,6 +88,11 @@ class TaskManager:
         options = list(self.option_dict.keys())
         options.remove(self.help)
         options.remove(self.all)
-        self.handle_args(options)
+        if options:
+            # Execute all options.
+            self.handle_args(options)
+        else:
+            # If no other options are defined, then print help and quit
+            self.print_help()
 
 
