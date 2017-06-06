@@ -26,16 +26,17 @@ class TaskManager:
         # as format variables. Default has options left aligned and 30 chars 
         # wide.
 
-        # Load data. User does not have to define a new load_data function, but 
-        # it will be automatically called if they do
-        self.load_data()
 
         # Set up option lists and dictionaries
         options = additional_options
         options.insert(0, ('--all' , self.do_all    , 'Execute all tasks.'))
+        options.insert(0, ('--reload', self.force_reload, 'Forces the data to be reloaded.'))
         options.insert(0, ('--help', self.print_help, 'Print usage and option info'))
+        options.insert(0, ('--pass', lambda: None, 'Pass without doing anything. Mostly for testing initialization stuff.'))
         self.help = '--help'
         self.all = '--all'
+        self.reload = '--reload'
+        self.pass_opt = '--pass'
         self.help_format = help_format
 
         self.option_dict = {}
@@ -50,12 +51,15 @@ class TaskManager:
         args = sys.argv[1:] # first arg is file name; ignore it
         self.handle_args(args)
 
-    def load_data(self):
-        pass
-
-    def handle_args(self, args):
+    def handle_args(self, args, skip_load=False):
         dict = self.option_dict
-        
+
+        if self.reload in args:
+            dict[self.reload]()
+            args.remove(self.reload)
+        elif not skip_load:
+            self.load_data()
+
         if self.help in args:
             dict[self.help]()
         elif self.all in args or not args:
@@ -75,6 +79,9 @@ class TaskManager:
             for callback in call_list:
                 callback()
 
+    def load_data(self, reload=False):
+        raise NotImplementedError
+
     def print_help(self):
         print()
         print('Available options are:')
@@ -88,11 +95,16 @@ class TaskManager:
         options = list(self.option_dict.keys())
         options.remove(self.help)
         options.remove(self.all)
+        options.remove(self.reload)
+        options.remove(self.pass_opt)
         if options:
             # Execute all options.
-            self.handle_args(options)
+            self.handle_args(options, skip_load=True)
         else:
             # If no other options are defined, then print help and quit
             self.print_help()
 
+    def force_reload(self):
+        print("Reloading data")
+        self.load_data(reload=True)
 

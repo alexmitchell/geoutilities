@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import numpy as np
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import pandas as pd
 
 #import .ut_fitter as utf
@@ -77,7 +77,7 @@ class PDDistributions:
 
     def calc_normalized_cumsum(self, data=None):
         if data is None:
-            self.data_cumsum =  self.data.cumsum() / self.data.sum()
+            self.cumsum =  self.data.cumsum() / self.data.sum()
         else:
             return data.cumsum() / data.sum()
 
@@ -144,8 +144,8 @@ class PDDistributions:
 
     def calc_shear_stress(self, depth, slope):
         # shear = density gravity depth slope
-        rho = DistributionMather.density_water
-        g = DistributionMather.gravity
+        rho = PDDistributions.density_water
+        g = PDDistributions.gravity
 
         self.shear_stresses = rho * g * depth * slope
 
@@ -164,32 +164,6 @@ class PDDistributions:
         fractional_rates = qb * (pi / fi)
 
         return fractional_rates
-
-    def calc_overall_sampler(self):
-        # Calculate the overall distribution from the selected columns
-        # 
-        # Sum the values in each grain size class then calc new cumsum 
-        # distributions
-        #
-        # Raw values are summed b/c normalized distributions would need 
-        # weights, which are based on the raw values anyway.
-        
-        sizes = self.data.index
-        times = self.data_cumsum.columns.levels[0]
-        self.time_sums = pd.DataFrame(index=sizes, columns=times).fillna(0)
-
-        # Sum the masses from different samplers at each timestep
-        # Gets rid of the MultiIndex too.
-        for time in self.data_cumsum.columns.levels[0]:
-            # Pick the data subset
-            slicer_key = (slice(None)),(time, slice(1,5))
-            data = self.data.loc[slicer_key]
-            
-            # sum up the masses in each size class
-            self.time_sums[time] = data.sum(axis=1)
-
-        # calculate the new normalized cumsum
-        self.time_cumsums = self.calc_normalized_cumsum(data=self.time_sums)
 
     def calc_line_functions(self):
         # Generate a dataframe of line functions by linear interpolating 
@@ -298,21 +272,27 @@ class PDDistributions:
         B_raw = B_raw.reindex(B_index, fill_value=0)
 
         # Calculate non-normalized cumsum of A and B
-        rA_cumsum = A_raw.cumsum()
-        rB_cumsum = B_raw.cumsum()
+        rA_cumsum = A_raw.cumsum() / A_raw.sum()
+        rB_cumsum = B_raw.cumsum() / B_raw.sum()
         #max_rB = rB_cumsum.
 
+        #print(rB_cumsum.index)
+        #print(rB_cumsum.columns)
+        #print(B_raw['t3070'])
+        #print(rB_cumsum['t3070'])
+
         # Generate functions for line segments of B
-        rB_lines = DistributionMather.generate_line_functions(rB_cumsum)
+        rB_lines = PDDistributions.generate_line_functions(rB_cumsum)
 
         # Convert B to match A size classes
         A_index = A_raw.index.values
-        rB_a = DistributionMather.convert(A_index, rB_lines)
+        rB_a = PDDistributions.convert(A_index, rB_lines)
 
         #fig = plt.figure()
         #axis = plt.gca()
-        #B_cumsum.plot(ax=axis)
-        #B_a.plot(ax=axis)
+        #B_raw.plot(ax=axis)
+        #rB_cumsum.plot()
+        #rB_a.plot(ax=axis)
         #plt.show()
         
         # normalize the distributions
@@ -321,7 +301,7 @@ class PDDistributions:
 
         # Compare input distributions to self distributions.
         #  Use Kolmogorov-Smirnov test
-        distribution_fit = DistributionMather.ks_test(rA_cumsum, rB_a)
+        distribution_fit = PDDistributions.ks_test(rA_cumsum, rB_a)
 
         return distribution_fit
         
@@ -336,9 +316,9 @@ class PDDistributions:
         # Recommended to change df such that anything outside of the defined 
         # distribution is a flat line. (add padding lines before/after df)
         
-        index = df.index.values.reshape(15,1)
+        n = df.index.values.size
+        index = df.index.values.reshape(n,1)
         columns = df.columns
-        n = index.size
 
         y = df.values # Get the numpy array out of df
         y0 = y[:n-1,:]
@@ -356,7 +336,7 @@ class PDDistributions:
         funcs = vfunc(line, m, b) # Creating the array of line functions
 
         # Make dataframe of line functions
-        df_f = pd.DataFrame(funcs, index=index[:14].reshape(14,), columns=columns, dtype='object')
+        df_f = pd.DataFrame(funcs, index=index[:n-1].ravel(), columns=columns, dtype='object')
 
         return df_f
         
