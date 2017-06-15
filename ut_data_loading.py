@@ -7,14 +7,17 @@ import os
 
 class DataLoader:
 
-    def __init__(self, data_path):
+    def __init__(self, data_path, pickle_path):
         self.data_path = data_path
-        self.pickle_path_str = data_path + '{}.pkl'
+        self.pickle_path = pickle_path
+        self.pickle_path_str = pickle_path + '{}.pkl'
 
-    def is_pickled(self, names):
+    def is_pickled(self, *names):
         # Check to see if there is a pickled-data file
 
-        printer("Checking if pickles exist...")
+        names = [names] if isinstance(names, str) else names # force names to be a list
+        plural = ["s", ""] if len(names) > 1 else ["","s"]
+        printer("Checking if pickle{0} {names} exist{1}...".format(*plural, names=list(names)))
         path = self.pickle_path_str
         isfile = os.path.isfile
         return all([isfile(path.format(name)) for name in names])

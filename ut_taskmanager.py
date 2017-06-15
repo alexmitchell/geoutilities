@@ -26,7 +26,6 @@ class TaskManager:
         # as format variables. Default has options left aligned and 30 chars 
         # wide.
 
-
         # Set up option lists and dictionaries
         options = additional_options
         options.insert(0, ('--all' , self.do_all    , 'Execute all tasks.'))
