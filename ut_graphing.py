@@ -4,8 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 #import pandas as pd
 
-import geoutilities.ut_fitting as utf
-from geoutilities.ut_basic import printer
+import ut_fitting as utf
+from ut_misc import printer
 
 class Grapher:
     # Provide functions for conveniently graphing data

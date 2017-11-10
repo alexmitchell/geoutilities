@@ -1,34 +1,48 @@
 #!/usr/bin/env python
 
-from .ut_basic import printer
+from ut_misc import printer
 
 import pandas as pd
 import os
 
+import logger as logger_module
+from helpyr_misc import ensure_dir_exists
+
 class DataLoader:
 
-    def __init__(self, data_path, pickle_path):
-        self.data_path = data_path
-        self.pickle_path = pickle_path
-        self.pickle_path_str = pickle_path + '{}.pkl'
+    def __init__(self, data_dir, pickle_dir, logger=None):
+        self.data_dir = data_dir
+        self.pickle_dir = pickle_dir
+        self.pickle_path = os.path.join(pickle_dir, '{}.pkl')
+        self.logger = logger
+
+        ensure_dir_exists(self.pickle_dir, self.logger)
 
     def is_pickled(self, *names):
         # Check to see if there is a pickled-data file
 
         names = [names] if isinstance(names, str) else names # force names to be a list
         plural = ["s", ""] if len(names) > 1 else ["","s"]
-        printer("Checking if pickle{0} {names} exist{1}...".format(*plural, names=list(names)))
-        path = self.pickle_path_str
+        msg = f"Checking if pickle{plural[0]} {names} exist{plural[1]}..."
+        printer(msg, logger=self.logger)
+        path = self.pickle_path
         isfile = os.path.isfile
         return all([isfile(path.format(name)) for name in names])
 
-    def load_pickle(self, name):
+    def load_pickle(self, name, add_path=True):
         # Load pickle data
-        pickle_path = self.pickle_path_str.format(name)
+        pickle_path = self.pickle_path.format(name) if add_path else name
         return pd.read_pickle(pickle_path)
 
-    def load_xlsx(self, filename, pd_kwargs):
-        filepath = self.data_path + filename
+    def load_pickles(self, names, add_path=True):
+        # Load pickle data store in dict
+        output = {}
+        for name in names:
+            output[name] = self.load_pickle(name, add_path)
+        return output
+
+    def load_xlsx(self, filename, pd_kwargs, is_path=False):
+        filepath = filename if is_path else os.path.join(self.data_dir, filename)
 
         data = pd.read_excel(filepath, **pd_kwargs)
         return data
@@ -39,7 +53,7 @@ class DataLoader:
 
     def load_txt(self, filename, flip=False, **kwargs):
     #def load_txt(self, filename, skiprows, skipfooter, flip=False, delimiter='\s*'):
-        filepath = self.data_path + filename
+        filepath = os.path.join(self.data_dir, filename)
 
         # Some default parameters
         keys = kwargs.keys()
@@ -61,12 +75,14 @@ class DataLoader:
 
     def produce_pickles(self, prepickles):
         # Pickle things so I don't have to keep rereading excel files
-        # prepickles is a dictionary of {'name':data}
-        printer(" Performing pickling process...")
+        # prepickles is a dictionary of {'filename':data}
+        msg = "Performing pickling process..."
+        printer(msg, logger=self.logger)
         for name in prepickles:
-            pickle_path = self.pickle_path_str.format(name)
+            pickle_path = self.pickle_path.format(name)
+            printer(f"Making pickle {name} at {pickle_path}",
+                    logger=self.logger)
             prepickles[name].to_pickle(pickle_path)
 
-        printer(" Pickles produced!")
-
+        printer("Pickles produced!", logger=self.logger)
 
