@@ -4,6 +4,7 @@ from ut_misc import printer
 
 import pandas as pd
 import os
+import pickle
 
 import logger as logger_module
 from helpyr_misc import ensure_dir_exists
@@ -17,6 +18,12 @@ class DataLoader:
         self.logger = logger
 
         ensure_dir_exists(self.pickle_dir, self.logger)
+
+        self.logger.write(["DataLoader created",
+                          f"Data dir is {self.data_dir}",
+                          f"Pickle dir is {self.pickle_dir}",
+                          ])
+
 
     def is_pickled(self, *names):
         # Check to see if there is a pickled-data file
@@ -41,19 +48,18 @@ class DataLoader:
             output[name] = self.load_pickle(name, add_path)
         return output
 
+    def _get_filepath(self, name, is_path=False):
+        return name if is_path else os.path.join(self.data_dir, name)
+
     def load_xlsx(self, filename, pd_kwargs, is_path=False):
-        filepath = filename if is_path else os.path.join(self.data_dir, filename)
+        filepath = self._get_filepath(filename, is_path)
 
         data = pd.read_excel(filepath, **pd_kwargs)
         return data
 
-    def load_csv(self, filename, flip=False, **kwargs):
-        kwargs['delimiter'] = ','
-        return self.load_txt(filename, flip=flip, **kwargs)
-
-    def load_txt(self, filename, flip=False, **kwargs):
+    def load_txt(self, filename, kwargs, flip=False, is_path=False):
     #def load_txt(self, filename, skiprows, skipfooter, flip=False, delimiter='\s*'):
-        filepath = os.path.join(self.data_dir, filename)
+        filepath = self._get_filepath(filename, is_path)
 
         # Some default parameters
         keys = kwargs.keys()
@@ -64,7 +70,7 @@ class DataLoader:
         if 'index_col' not in keys:
             kwargs['index_col'] = 0
         if 'delimiter' not in keys:
-            kwargs['delimiter'] = '\s*'
+            kwargs['delimiter'] = r'\s+' # any whitespace
 
         data = pd.read_csv(filepath, **kwargs)
 
@@ -74,15 +80,21 @@ class DataLoader:
             return data
 
     def produce_pickles(self, prepickles):
-        # Pickle things so I don't have to keep rereading excel files
+        # Pickle things so I don't have to keep rereading the original files
         # prepickles is a dictionary of {'filename':data}
-        msg = "Performing pickling process..."
-        printer(msg, logger=self.logger)
+        # Returns a list of all the filepaths for the pickles produced
+        printer("Performing pickling process...", logger=self.logger)
+        pickle_paths = []
         for name in prepickles:
             pickle_path = self.pickle_path.format(name)
-            printer(f"Making pickle {name} at {pickle_path}",
-                    logger=self.logger)
-            prepickles[name].to_pickle(pickle_path)
+            printer(f"Making pickle {name} at {pickle_path}",logger=self.logger)
+            try:
+                prepickles[name].to_pickle(pickle_path)
+            except AttributeError:
+                pickle.dump(prepickles[name], open(pickle_path, mode='wb'))
+            pickle_paths.append(pickle_path)
 
         printer("Pickles produced!", logger=self.logger)
+
+        return pickle_paths
 

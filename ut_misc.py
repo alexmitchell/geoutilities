@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 
-
 VERBOSE = True
 
+# These functions should be moved to helpyr.helpyr_mis.py in the future
 def printer(msg='', n=1, logger=None):
     msgs = msg*n
     if logger is None:
